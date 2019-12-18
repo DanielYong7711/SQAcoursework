@@ -1,5 +1,6 @@
 package g53sqm.chat;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,6 +12,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
 public class TestServer {
@@ -19,15 +21,39 @@ public class TestServer {
     private int test_port_no;
     private Thread test_server_thread;
 
-    public class test_runnable implements Runnable{
+    private Server server;
+    private int serverPort;
+    private Thread serverThread;
 
+    // Initialise server
+    @Before
+    public void setup() {
+        test_server = new Server(0);
+        test_port_no = test_server.getPortNo();
+        serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Start Server Thread.");
+                test_server.listen();
+            }
+        });
+        // Start the thread as daemon so it would stop when JVM stop
+        serverThread.setDaemon(true);
+        serverThread.start();
 
-        public void run() {
-
-            System.out.println("Test server thread started");
-            test_server.listen();
+        // Let it sleep for 0.5 second to ensure thread executed
+        try {
+            sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
+
+    @After
+    public void stopServer() {
+        test_server.stopListening();
+    }
+
     private Socket createMockUsers(String username, int portNo){
         Socket user = null;
         try{
@@ -62,27 +88,7 @@ public class TestServer {
         return text;
     }
 
-    // Initialise server
-    @Before
-    public void initialiseServer(){
 
-        test_server = new Server(0);
-        test_port_no = test_server.getPortNo();
-        Runnable runnable = new test_runnable();
-        test_server_thread = new Thread(runnable);
-
-        // To terminate automatically
-        test_server_thread.setDaemon(true);
-        test_server_thread.start();
-
-
-        // Prevent race condition
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
     //register new user
     @Test
@@ -102,7 +108,7 @@ public class TestServer {
     }
 
     //same username entered twice
-    @Test
+   @Test
     public void shouldUser_register_sameUsername(){
         Socket user1;
         String username = "User";
@@ -135,7 +141,7 @@ public class TestServer {
         }
         String reply = userReceiveMessage(user);
         System.out.println(reply);
-        String expected = "BAD must enter a username";
+        String expected = "BAD enter valid username";
         assertEquals(expected,reply);
     }
 
@@ -246,7 +252,7 @@ public class TestServer {
         userEnterCommandAndText(client1, "JUNK TEZXT");
         String reply1 = userReceiveMessage(client1);
 
-        assertEquals("BAD command not recognised", reply1);
+        assertEquals("BAD default command not recognised", reply1);
     }
 
     @Test

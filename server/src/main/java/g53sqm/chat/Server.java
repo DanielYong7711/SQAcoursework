@@ -107,6 +107,10 @@ public class Server {
 		return server.getLocalPort();
 	}
 
+	public int getServerPort() {
+		return server.getLocalPort();
+	}
+
 	protected void finalize() throws IOException{
 		server.close();
 	}

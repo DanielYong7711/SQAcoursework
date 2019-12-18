@@ -42,20 +42,28 @@ public class Connection implements Runnable {
 		while(running) {
 			try {
 				line = in.readLine();
-				validateMessage(line);
+				if (line != null) {
+					validateMessage(line);
+				} else{
+					running = false;
+				}
 			} catch (IOException e) {
 				System.out.println("Read failed");
-				System.exit(-1);
+				running = false;
 			}
+		}
+		if (!running){
+			serverReference.removeDeadUsers();
 		}
 	}
 
 	private void validateMessage(String message) {
 
-		if(message.length() < 4){
-			sendOverConnection ("BAD invalid command to server");
+		if (message.length() < 4) {
+			sendOverConnection("BAD INVALID invalid command to server");
 		} else {
-			switch(message.substring(0,4)){
+			String trimmed = message.trim();
+			switch (message.substring(0, 4)) {
 				case "LIST":
 					list();
 					break;
@@ -64,24 +72,36 @@ public class Connection implements Runnable {
 					stat();
 					break;
 
-				case "IDEN":
-					iden(message.substring(5));
-					break;
-
-				case "HAIL":
-					hail(message.substring(5));
-					break;
-
-				case "MESG":
-					mesg(message.substring(5));
-					break;
-
 				case "QUIT":
 					quit();
 					break;
 
+				case "IDEN":
+					if (trimmed.length() >= 5) {
+						iden(trimmed.substring(5));
+					} else {
+						sendOverConnection("BAD enter valid username");
+					}
+					break;
+
+				case "HAIL":
+					if (trimmed.length() >= 5) {
+						hail(trimmed.substring(5));
+					} else {
+						sendOverConnection("BAD enter valid broadcast");
+					}
+					break;
+
+				case "MESG":
+					if (trimmed.length() >= 5) {
+						mesg(trimmed.substring(5));
+					} else {
+						sendOverConnection("BAD enter valid pm");
+					}
+					break;
+
 				default:
-					sendOverConnection("BAD command not recognised");
+					sendOverConnection("BAD default command not recognised");
 					break;
 			}
 		}
