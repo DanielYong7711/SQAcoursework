@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+}
+
+allprojects {
+    repositories {
+        // Use jcenter for resolving dependencies.
+        // You can declare any Maven/Ivy/file repository here.
+        jcenter()
+    }
+}
+
+subprojects{
+    version = '1.0'
+}
