@@ -1,14 +1,17 @@
 package g53sqm.chat;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.After;
-import org.junit.Assert;
-import static org.junit.Assert.*;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 
 public class TestServer {
 
@@ -17,13 +20,14 @@ public class TestServer {
     private Thread test_server_thread;
 
     public class test_runnable implements Runnable{
+
+
         public void run() {
 
             System.out.println("Test server thread started");
             test_server.listen();
         }
     }
-
     private Socket createMockUsers(String username, int portNo){
         Socket user = null;
         try{
@@ -40,7 +44,7 @@ public class TestServer {
             PrintWriter user_out = new PrintWriter(user.getOutputStream(), true);
             user_out.println(text);
             Thread.sleep(1000);
-        }catch(IOException|InterruptedException ie) {
+        }catch(IOException |InterruptedException ie) {
             Assert.fail("Failed to send command and text");
         }
     }
@@ -67,12 +71,12 @@ public class TestServer {
         Runnable runnable = new test_runnable();
         test_server_thread = new Thread(runnable);
 
-        // Set thread as Daemon to automatically terminate when JVM terminates
+        // To terminate automatically
         test_server_thread.setDaemon(true);
         test_server_thread.start();
 
 
-        // Sleep for 1 second for thread execution
+        // Prevent race condition
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
@@ -80,6 +84,62 @@ public class TestServer {
         }
     }
 
+    //register new user
+    @Test
+    public void shouldUser_register(){
+        Socket user = null;
+        String username = "User_1";
+        try{
+            user = new Socket("localhost",test_port_no);
+            userReceiveMessage(user);
+            userEnterCommandAndText(user, "IDEN " + username);
+        }catch (IOException e) {
+
+        }
+        String reply = userReceiveMessage(user);
+        String expected = "OK Welcome to the chat server "+ username;
+        assertEquals(expected,reply);
+    }
+
+    //same username entered twice
+    @Test
+    public void shouldUser_register_sameUsername(){
+        Socket user1;
+        String username = "User";
+        Socket user2 = null;
+        try{
+            user1 = new Socket("localhost",test_port_no);
+            userEnterCommandAndText(user1, "IDEN " + username);
+
+            user2 = new Socket("localhost",test_port_no);
+            userReceiveMessage(user2);
+            userEnterCommandAndText(user2, "IDEN " + username);
+        }catch (IOException e) {
+
+        }
+        String reply = userReceiveMessage(user2);
+        String expected = "BAD username is already taken";
+        assertEquals(expected,reply);
+    }
+
+    //register empty space as username
+    @Test
+    public void shouldUsername_equals_blank(){
+        Socket user =null;
+        String username = " ";
+        try{
+            user = new Socket("localhost",test_port_no);
+            userReceiveMessage(user);
+            userEnterCommandAndText(user, "IDEN " + username);
+        }catch (IOException e) {
+        }
+        String reply = userReceiveMessage(user);
+        System.out.println(reply);
+        String expected = "BAD must enter a username";
+        assertEquals(expected,reply);
+    }
+
+    //list of online user when no client is initiated
     @Test
     public void getUserList_noUsersOnline_returnEmptyList(){
         ArrayList<String> actual_users_online = test_server.getUserList();
@@ -87,6 +147,7 @@ public class TestServer {
         assertArrayEquals(actual_users_online.toArray(),expected_users_online);
     }
 
+    //return correct list of username
     @Test
     public void getUserList_multipleUsersOnline_returnCorrectUsernameList(){
         //Create mock clients
@@ -104,6 +165,7 @@ public class TestServer {
 
     }
 
+    //get correct list of username after one client quits
     @Test
     public void getUserList_usersOnlineQuit_returnUsernameListWithoutQuit() {
         //Create mock clients
@@ -119,6 +181,7 @@ public class TestServer {
         assertArrayEquals(expected_users_online,actual_users_online.toArray());
     }
 
+    //return true if user is online
     @Test
     public void doesUserExist_userOnline_returnTrue(){
         Socket client1 = createMockUsers("existing_client1",test_port_no);
@@ -127,6 +190,7 @@ public class TestServer {
         assertTrue(userFound);
     }
 
+    //check if online username exists
     @Test
     public void doesUserExist_multipleUserOnline_returnTrue(){
         Socket client1 = createMockUsers("existing_client1",test_port_no);
@@ -162,190 +226,185 @@ public class TestServer {
     }
 
     @Test
-    public void broadcastMessage_1User1Message_userReceiveMessage(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
+    public void shouldSend_broadcast(){
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        Socket client2 = createMockUsers("existing_client2",test_port_no);
 
-        String message = "Hi";
-        test_server.broadcastMessage(message);
+        //absorb initial line
+        userReceiveMessage(client2);
 
-        String actual_message = userReceiveMessage(client1);
+        userEnterCommandAndText(client1, "HAIL hi");
+        String reply1 = userReceiveMessage(client2);
 
-        assertEquals(message, actual_message);
-
+        assertEquals("Broadcast from existing_client1: "+"hi", reply1);
     }
 
     @Test
-    public void broadcastMessage_1UserMultipleMessages_userReceiveMultipleMessages(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
+    public void shouldSend_BADcommand(){
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        userReceiveMessage(client1);
+        userEnterCommandAndText(client1, "JUNK TEZXT");
+        String reply1 = userReceiveMessage(client1);
 
-        String message1 = "Hi";
-        String message2 = "Can we be friends?";
-
-        test_server.broadcastMessage(message1);
-        String actual_message1 = userReceiveMessage(client1);
-        assertEquals(message1, actual_message1);
-
-        test_server.broadcastMessage(message2);
-        String actual_message2 = userReceiveMessage(client1);
-        assertEquals(message2, actual_message2);
-
+        assertEquals("BAD command not recognised", reply1);
     }
 
     @Test
-    public void broadcastMessage_multipleUsers1Message_usersReceiveMessage(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
-        Socket client2 = createMockUsers("client2",test_port_no);
-        userReceiveMessage(client2); //welcome message
+    public void shouldSend_privateMessage_receive(){
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        Socket client2 = createMockUsers("existing_client2",test_port_no);
 
-        String message = "Hi";
-        test_server.broadcastMessage(message);
+        userReceiveMessage(client2);//absorb message
+        userEnterCommandAndText(client1, "MESG existing_client2 hi");
 
-        String actual_message_client1 = userReceiveMessage(client1);
-        assertEquals(message, actual_message_client1);
+        String reply1 = userReceiveMessage(client2);
+        String expected = "PM from existing_client1:hi";
 
-        String actual_message_client2 = userReceiveMessage(client2);
-        assertEquals(message, actual_message_client2);
-
+        assertEquals(expected, reply1);
     }
 
     @Test
-    public void sendPrivateMessage_message1UserValidUsername_userReceivesMessage(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
+    public void shouldSend_privateMessage_responseFromServer(){
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        Socket client2 = createMockUsers("existing_client2",test_port_no);
 
-        String message = "Hi";
-        test_server.sendPrivateMessage(message,"client1");
-        String actual_message_client1 = userReceiveMessage(client1);
-        assertEquals(message, actual_message_client1);
+        userReceiveMessage(client1);//absorb line
+
+        userEnterCommandAndText(client1, "MESG existing_client2 hi");
+
+        String reply1 = userReceiveMessage(client1);
+        String expected = "OK your message has been sent";
+
+        assertEquals(expected, reply1);
     }
 
+    //receive correct list of active user when list is inputted
     @Test
-    public void sendPrivateMessage_message1UserInvalidUsername_userDoesNotReceivesMessage(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
+    public void shouldSend_list(){
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        userReceiveMessage(client1);//absorb line
+        Socket client2 = createMockUsers("existing_client2",test_port_no);
+        Socket client3 = createMockUsers("existing_client3",test_port_no);
 
-        String message = "Hi";
-        test_server.sendPrivateMessage(message,"client2");
-        test_server.broadcastMessage("Sorry I don't know your username"); //to check if private message sent
-        String actual_message_client1 = userReceiveMessage(client1);
-        assertNotEquals(message, actual_message_client1);
+        userEnterCommandAndText(client1, "LIST");
+
+        String actualReply = userReceiveMessage(client1);
+        ArrayList<String> expected_users_online = test_server.getUserList();
+        String namelist=(expected_users_online.toString().substring(1, expected_users_online.toString().length() - 1));
+        String s = "OK "+namelist+", " ;
+
+        assertEquals(s,actualReply);
     }
 
+    //display stat when 1 user active
     @Test
-    public void sendPrivateMessage_message1UserMultipleMessages_userReceivesMessage(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
+    public void shouldSend_STAT_singleUser(){
+        int msgCount=0;
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        userReceiveMessage(client1);
 
-        String message1 = "Hi";
-        String message2 = "Can we be friends?";
+        userEnterCommandAndText(client1, "STAT");
+        String actualReply = userReceiveMessage(client1);
 
-        test_server.sendPrivateMessage(message1,"client1");
-        String actual_message1_client1 = userReceiveMessage(client1);
-        assertEquals(message1, actual_message1_client1);
 
-        test_server.sendPrivateMessage(message2,"client1");
-        String actual_message2_client1 = userReceiveMessage(client1);
-        assertEquals(message2, actual_message2_client1);
+        ArrayList<String> expected_users_online = test_server.getUserList();
+        String expected = "OK There are currently "+expected_users_online.size()+" user(s) on the server You are logged in and have sent "+msgCount+ " message(s)";
+
+
+        assertEquals(expected, actualReply);
     }
 
+    //display stat when multiple user active
     @Test
-    public void sendPrivateMessage_messageMultipleUsers_userReceivesIntendedMessage(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        userReceiveMessage(client1); //welcome message
+    public void shouldSend_STAT_with_multiUser(){
+        int msgCount=0;
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        userReceiveMessage(client1);//absorb line
+        Socket client2 = createMockUsers("existing_client2",test_port_no);
+        userEnterCommandAndText(client1, "STAT");
 
-        Socket client2 = createMockUsers("client2",test_port_no);
-        userReceiveMessage(client2); //welcome message
+        String actualReply = userReceiveMessage(client1);
 
-        String message1 = "Hi";
-        test_server.sendPrivateMessage(message1,"client1");
-        test_server.broadcastMessage("Secret message for client1"); //to check if private message sent
-        String actual_message1_client1 = userReceiveMessage(client1);
-        assertEquals(message1, actual_message1_client1);
-        String actual_message1_client2 = userReceiveMessage(client2);
-        assertNotEquals(message1, actual_message1_client2);
+        ArrayList<String> actual_users_online = test_server.getUserList();
+        String expected = "OK There are currently "+actual_users_online.size()+" user(s) on the server You are logged in and have sent "+msgCount+ " message(s)";
 
-        String message2 = "Can we be friends?";
-        test_server.sendPrivateMessage(message2,"client2");
-        test_server.broadcastMessage("Secret message for client2"); //to check if private message sent
-        String actual_message2_client1 = userReceiveMessage(client1);
-        assertNotEquals(message2, actual_message2_client1);
-        String actual_message2_client2 = userReceiveMessage(client2);
-        assertEquals(message2, actual_message2_client2);
+        assertEquals(expected, actualReply);
     }
 
+    //display correct number of messages sent
     @Test
-    public void removeDeadUsers_1userOnline_userNotRemoved(){
-        Socket client1 = createMockUsers("client1",test_port_no);
-        int no_of_users_before_remove = test_server.getNumberOfUsers();
+    public void should_send_STAT_msg_sent(){
+        int msgCount=0;
+        Socket client1 = createMockUsers("existing_client1",test_port_no);
+        userReceiveMessage(client1);
 
-        test_server.removeDeadUsers();
 
-        int no_of_users_after_remove = test_server.getNumberOfUsers();
-        assertEquals(no_of_users_before_remove,no_of_users_after_remove);
+        userEnterCommandAndText(client1, "HAIL hi");
+        msgCount++;
+        userReceiveMessage(client1);
+
+
+        userEnterCommandAndText(client1, "HAIL hi");
+        msgCount++;
+        userReceiveMessage(client1);
+
+
+        userEnterCommandAndText(client1, "STAT");
+        String actualReply = userReceiveMessage(client1);
+
+
+        ArrayList<String> actual_users_online = test_server.getUserList();
+        String expected = "OK There are currently "+actual_users_online.size()+" user(s) on the server You are logged in and have sent "+msgCount+ " message(s)";
+
+
+        assertEquals(expected, actualReply);
     }
 
+    //send a broadcast message to all client
     @Test
-    public void removeDeadUsers_1userOnlineAndQuit_userRemoved() {
-        Socket client1 = createMockUsers("client1",test_port_no);
+    public void broadcastMessage_MultipleUsers_UsersReceiveMessage() {
+        Socket user1 = createMockUsers("user1", test_port_no);
+        userReceiveMessage(user1);//absorb line
+        Socket user2 = createMockUsers("user2", test_port_no);
+        userReceiveMessage(user2);//absorb line
 
-        userEnterCommandAndText(client1, "QUIT");
-        test_server.removeDeadUsers();
-        int no_of_users_after_remove = test_server.getNumberOfUsers();
-        assertEquals(0,no_of_users_after_remove);
+        String msg = "1 message!";
+        test_server.broadcastMessage(msg);
+        String actualUser1 = userReceiveMessage(user1);
+        String actualUser2 = userReceiveMessage(user2);
+
+        assertEquals(msg, actualUser1);
+        assertEquals(msg, actualUser2);
     }
 
+    //send single broadcast message from a client
     @Test
-    public void removeDeadUsers_1OfMultipleUsersQuit_1userRemoved() {
-        Socket client1 = createMockUsers("client1",test_port_no);
-        Socket client2 = createMockUsers("client2",test_port_no);
+    public void broadcastMessage_SingleUser_UserReceiveMessage() {
+        Socket user1 = createMockUsers("user1", test_port_no);
+        userReceiveMessage(user1);//absorb line
 
-        userEnterCommandAndText(client1, "QUIT");
-        test_server.removeDeadUsers();
-        int no_of_users_after_remove = test_server.getNumberOfUsers();
-        assertEquals(1,no_of_users_after_remove);
-        assertEquals("client2",test_server.getUserList().get(0));
+        String msg = "1 message!";
+        test_server.broadcastMessage(msg);
+        String actualUser1 = userReceiveMessage(user1);
+
+        assertEquals(msg, actualUser1);
     }
 
+    //send multiple broadcast message from a client
     @Test
-    public void getNumberOfUsers_noUsersOnline_return0(){
-        int actual_no_users_online = test_server.getNumberOfUsers();
-        assertEquals(0,actual_no_users_online);
+    public void broadcastMessage_SingleUserMultipleMessage_UserReceiveMessage() {
+        Socket user1 = createMockUsers("user1", test_port_no);
+        userReceiveMessage(user1);//absorb line
+
+        String msg1 = "1 message!";
+        test_server.broadcastMessage(msg1);
+        String actualUser1 = userReceiveMessage(user1);
+
+        String msg2 = "2 message!";
+        test_server.broadcastMessage(msg2);
+        String actualUser2 = userReceiveMessage(user1);
+
+        assertEquals(msg1, actualUser1);
+        assertEquals(msg2, actualUser2);
     }
-
-    @Test
-    public void getNumberOfUsers_2UsersOnline_return2(){
-        //Create mock clients
-        Socket client1 = createMockUsers("client1",test_port_no);
-        Socket client2 = createMockUsers("client2",test_port_no);
-
-        int actual_no_users_online = test_server.getNumberOfUsers();
-        assertEquals(2,actual_no_users_online);
-    }
-
-    @Test
-    public void getNumberOfUsers_usersOnlineQuit_returnCorrectNo() {
-        //Create mock clients
-        Socket client1 = createMockUsers("client1",test_port_no);
-        Socket client2 = createMockUsers("client2",test_port_no);
-
-        //client1 quits
-        userEnterCommandAndText(client1, "QUIT");
-        int actual_no_users_online = test_server.getNumberOfUsers();
-        assertEquals(1,actual_no_users_online);
-
-        //client2 quits
-        userEnterCommandAndText(client2, "QUIT");
-        actual_no_users_online = test_server.getNumberOfUsers();
-        assertEquals(0,actual_no_users_online);
-    }
-
-    @After
-    public void closeConnection(){
-        test_server.stopListening();
-
-    }
-
 }
