@@ -413,4 +413,86 @@ public class TestServer {
         assertEquals(msg1, actualUser1);
         assertEquals(msg2, actualUser2);
     }
+
+    @Test
+    public void sendPrivateMessage_SingleUserIncorrectUsername_UserReceivesMessage() {
+        Socket user = createMockUsers("user", serverPort);
+        userReceiveMessage(user); // Clean first line of buffer, the login message
+
+        String msg = "Hello!";
+        userEnterCommandAndText(user, "MESG asd asd");
+        //server.broadcastMessage(""); // Use this to ensure the next line doesn't block.
+
+        String actual = userReceiveMessage(user);
+        assertNotEquals(msg, actual);
+    }
+
+    //here
+
+    @Test
+    public void removeDeadUsers_1userOnlineAndQuit_userRemoved() {
+        Socket client1 = createMockUsers("client1",test_port_no);
+
+        userEnterCommandAndText(client1, "QUIT");
+        test_server.removeDeadUsers();
+        int no_of_users_after_remove = test_server.getNumberOfUsers();
+        assertEquals(0,no_of_users_after_remove);
+    }
+
+    @Test
+    public void removeDeadUsers_1userOnline_userNotRemoved(){
+        Socket client1 = createMockUsers("client1",test_port_no);
+        int no_of_users_before_remove = test_server.getNumberOfUsers();
+
+        test_server.removeDeadUsers();
+
+        int no_of_users_after_remove = test_server.getNumberOfUsers();
+        assertEquals(no_of_users_before_remove,no_of_users_after_remove);
+    }
+
+
+    @Test
+    public void removeDeadUsers_1OfMultipleUsersQuit_1userRemoved() {
+        Socket client1 = createMockUsers("client1",test_port_no);
+        Socket client2 = createMockUsers("client2",test_port_no);
+
+        userEnterCommandAndText(client1, "QUIT");
+        test_server.removeDeadUsers();
+        int no_of_users_after_remove = test_server.getNumberOfUsers();
+        assertEquals(1,no_of_users_after_remove);
+        assertEquals("client2",test_server.getUserList().get(0));
+    }
+
+    @Test
+    public void getNumberOfUsers_noUsersOnline_return0(){
+        int actual_no_users_online = test_server.getNumberOfUsers();
+        assertEquals(0,actual_no_users_online);
+    }
+
+    @Test
+    public void getNumberOfUsers_2UsersOnline_return2(){
+        //Create mock clients
+        Socket client1 = createMockUsers("client1",test_port_no);
+        Socket client2 = createMockUsers("client2",test_port_no);
+
+        int actual_no_users_online = test_server.getNumberOfUsers();
+        assertEquals(2,actual_no_users_online);
+    }
+
+    @Test
+    public void getNumberOfUsers_usersOnlineQuit_returnCorrectNo() {
+        //Create mock clients
+        Socket client1 = createMockUsers("client1",test_port_no);
+        Socket client2 = createMockUsers("client2",test_port_no);
+
+        //client1 quits
+        userEnterCommandAndText(client1, "QUIT");
+        int actual_no_users_online = test_server.getNumberOfUsers();
+        assertEquals(1,actual_no_users_online);
+
+        //client2 quits
+        userEnterCommandAndText(client2, "QUIT");
+        actual_no_users_online = test_server.getNumberOfUsers();
+        assertEquals(0,actual_no_users_online);
+    }
 }

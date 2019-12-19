@@ -2,10 +2,13 @@ package g53sqm.chat.client;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
@@ -70,6 +73,20 @@ public class ClientUI extends Application {
         input.setEditable(false);
         input.setDisable(true);
 
+        input.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if (event.getCode().equals(KeyCode.ENTER))
+                {
+
+                    doSend();
+                    input.clear();
+                }
+            }
+        });
+
+
+
         //send button properties
         send = new Button();
         send.setText("Send");
@@ -132,7 +149,7 @@ public class ClientUI extends Application {
             return ;
         }
 
-        client.sendMessage(msg);
+        client.sendMessage(msg.trim());
 
         if(msg.equals("QUIT")){
             stage.close();
