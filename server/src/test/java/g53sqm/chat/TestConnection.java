@@ -584,7 +584,7 @@ public class TestConnection {
 
         socketReceiveMessage(test_socket); //welcome message
 
-        String expected_message = "ss";
+        String expected_message = "";
 
         test_connection.messageForConnection("");
         String actual_message = socketReceiveMessage(test_socket);
@@ -598,12 +598,12 @@ public class TestConnection {
         Connection test_connection = connectionsList.get(0);
         socketReceiveMessage(test_socket); //welcome message
 
-        String expected_message1 = "Hi 1";
+        String expected_message1 = "Message 1";
         test_connection.messageForConnection(expected_message1);
         String actual_message1 = socketReceiveMessage(test_socket);
         assertEquals(expected_message1, actual_message1);
 
-        String expected_message2 = "Hi 2";
+        String expected_message2 = "Message 2";
         test_connection.messageForConnection(expected_message2);
         String actual_message2 = socketReceiveMessage(test_socket);
         assertEquals(expected_message2, actual_message2);
@@ -619,8 +619,8 @@ public class TestConnection {
         socketReceiveMessage(test_socket1); //welcome message
         socketReceiveMessage(test_socket2);
 
-        String expected_message1 = "Hi Connection 1";
-        String expected_message2 = "Hi Connection 2";
+        String expected_message1 = "Connection 1";
+        String expected_message2 = "Connection 2";
 
         test_connection1.messageForConnection(expected_message1);
         test_connection2.messageForConnection(expected_message2);
