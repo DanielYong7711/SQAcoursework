@@ -135,17 +135,17 @@ public class TestConnection {
         assertEquals(expected_short_error_message, actual_error_message);
 
         //Short invalid command
-        socketEnterCommandAndText(test_socket, "YES");
+        socketEnterCommandAndText(test_socket, "LOL");
         actual_error_message = socketReceiveMessage(test_socket);
         assertEquals(expected_short_error_message, actual_error_message);
 
         //Exact invalid command
-        socketEnterCommandAndText(test_socket, "FAIL");
+        socketEnterCommandAndText(test_socket, "HAHA");
         actual_error_message = socketReceiveMessage(test_socket);
         assertEquals(expected_long_error_message, actual_error_message);
 
         //Long invalid command
-        socketEnterCommandAndText(test_socket, "PLEASE");
+        socketEnterCommandAndText(test_socket, "HELICOPTER");
         actual_error_message = socketReceiveMessage(test_socket);
         assertEquals(expected_long_error_message, actual_error_message);
     }
@@ -256,6 +256,7 @@ public class TestConnection {
         assertEquals(expected_message, actual_message);
     }
 
+    //10
     @Test
     public void iden_noUsername_returnErrorMessageForNoUsername() {
         Socket test_socket = createConnection(test_port_no);
@@ -389,6 +390,7 @@ public class TestConnection {
         assertEquals(expected_message, actual_message);
     }
 
+    //20
     @Test
     public void hail_1userRegisteredMultiplePublicMessageEntered_returnCorrectMessage() {
         Socket test_socket = createConnection(test_port_no);
@@ -582,7 +584,7 @@ public class TestConnection {
 
         socketReceiveMessage(test_socket); //welcome message
 
-        String expected_message = "";
+        String expected_message = "ss";
 
         test_connection.messageForConnection("");
         String actual_message = socketReceiveMessage(test_socket);
