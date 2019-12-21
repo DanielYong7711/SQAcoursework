@@ -38,7 +38,7 @@ public class Connection implements Runnable {
 			System.exit(-1);
 		}
 		running = true;
-		this.sendOverConnection("OK Welcome to the chat server, there are currelty " + serverReference.getNumberOfUsers() + " user(s) online");
+		this.sendOverConnection("OK Welcome to the chat server, there are currently " + serverReference.getNumberOfUsers() + " user(s) online");
 		while(running) {
 			try {
 				line = in.readLine();
@@ -60,7 +60,7 @@ public class Connection implements Runnable {
 	private void validateMessage(String message) {
 
 		if (message.length() < 4) {
-			sendOverConnection("BAD INVALID invalid command to server");
+			sendOverConnection("BAD invalid command to server");
 		} else {
 			String trimmed = message.trim();
 			switch (message.substring(0, 4)) {
@@ -147,7 +147,7 @@ public class Connection implements Runnable {
 		else{
 			switch(state) {
 				case STATE_REGISTERED:
-					sendOverConnection("BAD you are already registerd with username " + username);
+					sendOverConnection("BAD you are already registered with username " + username);
 					break;
 
 				case STATE_UNREGISTERED:

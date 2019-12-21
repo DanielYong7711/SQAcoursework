@@ -78,7 +78,6 @@ public class ClientUI extends Application {
             public void handle(KeyEvent event) {
                 if (event.getCode().equals(KeyCode.ENTER))
                 {
-
                     doSend();
                     input.clear();
                 }
