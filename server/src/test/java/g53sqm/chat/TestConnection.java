@@ -390,7 +390,6 @@ public class TestConnection {
         assertEquals(expected_message, actual_message);
     }
 
-    //20
     @Test
     public void hail_1userRegisteredMultiplePublicMessageEntered_returnCorrectMessage() {
         Socket test_socket = createConnection(test_port_no);
@@ -413,6 +412,7 @@ public class TestConnection {
         assertEquals(expected_message, actual_message);
     }
 
+    //20
     @Test
     public void hail_multipleUserRegisteredPublicMessageEntered_returnCorrectMessage() {
         Socket test_socket1 = createConnection(test_port_no);
@@ -592,6 +592,7 @@ public class TestConnection {
 
     }
 
+    //30
     @Test
     public void messageForConnection_sendMultipleMessage_socketReceiveMessages() {
         Socket test_socket = createConnection(test_port_no);
