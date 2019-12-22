@@ -83,9 +83,19 @@ public class TestClient {
     }
 
     @Test
-    public void random(){
-        Socket user1 = createMockUsers("client");
-        userEnterCommandAndText(user1,"HAIL test data");
+    public void clientNotSuccesfullyConnected(){
+        Client client = new Client("localhost", 3);
+        boolean status = client.getConnectionStatus();
+
+        assertFalse(status);
+    }
+
+    @Test
+    public void clientSuccesfullyConnected(){
+        Client client = new Client("localhost", test_port_no);
+        boolean status = client.getConnectionStatus();
+
+        assertTrue(status);
     }
 
     @Test
@@ -102,21 +112,5 @@ public class TestClient {
         String expected = "Broadcast from dan: data";
         String actual = userReceiveMessage(listeningSocket);
         assertEquals(expected,actual);
-    }
-
-    @Test
-    public void clientNotSuccesfullyConnected(){
-        Client client = new Client("localhost", 3);
-        boolean status = client.getConnectionStatus();
-
-        assertFalse(status);
-    }
-
-    @Test
-    public void clientSuccesfullyConnected(){
-        Client client = new Client("localhost", test_port_no);
-        boolean status = client.getConnectionStatus();
-
-        assertFalse(status);
     }
 }
